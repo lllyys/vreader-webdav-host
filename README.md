@@ -95,9 +95,20 @@ The logs go to `/tmp` deliberately — macOS rotates `/tmp` on reboot, which is 
 
 ## Troubleshooting
 
-#### `rclone: command not found` after `setup.sh`
+#### `rclone: command not found` from `setup.sh` itself
 
-`setup.sh` only installs rclone via Homebrew if rclone is absent. If you don't have Homebrew, install rclone manually per [https\://rclone.org/install/](https://rclone.org/install/) and rerun.
+`setup.sh` only installs rclone via Homebrew if rclone is absent. If you don't have Homebrew, install rclone manually per <https://rclone.org/install/> and rerun.
+
+#### `/tmp/vreader-icloud-sync.err` says `rclone: command not found`
+
+Different cause from the entry above: `rclone` is installed, but launchd's stripped PATH (`/usr/bin:/bin:/usr/sbin:/sbin`) doesn't include `/opt/homebrew/bin` (Apple Silicon Homebrew) or `/usr/local/bin` (Intel Homebrew), so the launchd-spawned `icloud-sync.sh` can't find the binary.
+
+v0.1.1+ persists the absolute rclone path `setup.sh` discovered into `~/.config/vreader-webdav-host/env` as `VREADER_RCLONE_BIN`, and `icloud-sync.sh` uses that. If you see this error, the env file is missing or stale — re-run `./setup.sh` to regenerate it. Verify after re-run:
+
+```bash
+grep VREADER_RCLONE_BIN ~/.config/vreader-webdav-host/env
+# expected: export VREADER_RCLONE_BIN=/opt/homebrew/bin/rclone (or your rclone install path)
+```
 
 #### `ERROR: $CONFIG_DIR/htpasswd still contains the placeholder sentinel`
 
@@ -111,15 +122,16 @@ Then rerun `./setup.sh`.
 
 #### `launchctl bootstrap … : Input/output error` on macOS Sonoma+
 
-Sonoma tightened LaunchAgent loading. The usual fix is to make sure no stale plist with the same Label is loaded:
+This is a Sonoma+ async-cleanup quirk where `launchctl bootstrap` can return exit 1 even when the load completes successfully ~1-3s later. v0.1.1+ handles this transparently: `start.sh` ignores the bootstrap exit code and polls `launchctl print` for up to 10s to confirm the actual load state. A successful install hides the EIO entirely.
+
+If you see `ERROR: failed to load after 10s: <label>` from `setup.sh` instead, it's a real failure (not the Sonoma quirk). The diagnostic surfaces the captured `launchctl bootstrap` stderr — read that first. If still unclear:
 
 ```bash
-launchctl bootout "gui/$(id -u)/com.vreader.webdav" 2>/dev/null
-launchctl bootout "gui/$(id -u)/com.vreader.icloud-sync" 2>/dev/null
-./setup.sh
+launchctl print "gui/$(id -u)/com.vreader.webdav"
+launchctl print "gui/$(id -u)/com.vreader.icloud-sync"
 ```
 
-If that still fails, check Console.app for the `com.vreader.*` labels — Sonoma logs the real reason there.
+and check Console.app for the `com.vreader.*` labels — Sonoma logs the real reason (malformed plist, bad path, permission issue) there.
 
 #### iCloud Drive evicted local copies of `VReaderBackups/`
 
