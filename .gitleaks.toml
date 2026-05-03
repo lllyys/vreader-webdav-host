@@ -1,0 +1,32 @@
+title = "vreader-webdav-host gitleaks config"
+
+[extend]
+useDefault = true
+
+# Catch htpasswd-style hashes that secret-scanning misses.
+# Username portion uses [^:\r\n]+ — htpasswd allows most chars before the colon.
+[[rules]]
+id = "htpasswd-bcrypt"
+description = "bcrypt hash in committed htpasswd"
+regex = '''[^:\r\n]+:\$2[ayb]\$\d{2}\$[A-Za-z0-9./]{53}$'''
+keywords = ["$2y$", "$2a$", "$2b$"]
+
+# Catch Tailscale auth keys (tskey-...).
+[[rules]]
+id = "tailscale-auth-key"
+description = "Tailscale auth key"
+regex = '''tskey-(auth|client)-[A-Za-z0-9-]+'''
+keywords = ["tskey-"]
+
+# Catch raw HTTP basic-auth headers that leak credentials.
+[[rules]]
+id = "http-basic-auth"
+description = "HTTP Authorization: Basic header committed"
+regex = '''Authorization:\s*Basic\s+[A-Za-z0-9+/=]{8,}'''
+keywords = ["Authorization: Basic"]
+
+[allowlist]
+description = "Sentinel placeholders are explicitly allowed by content match"
+regexes = [
+  '''REPLACE_ME_PLACEHOLDER_BCRYPT_HASH_DO_NOT_USE''',
+]
