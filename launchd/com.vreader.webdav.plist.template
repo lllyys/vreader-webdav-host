@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.vreader.webdav</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>${RCLONE_PATH}</string>
+    <string>serve</string>
+    <string>webdav</string>
+    <string>${DATA_DIR}</string>
+    <string>--addr</string>
+    <string>0.0.0.0:${PORT}</string>
+    <string>--htpasswd</string>
+    <string>${HTPASSWD_PATH}</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>/tmp/vreader-webdav.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/vreader-webdav.err</string>
+</dict>
+</plist>
