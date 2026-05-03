@@ -1,0 +1,15 @@
+# Real config — NEVER committed.
+config/htpasswd
+config/htpasswd.bak
+config/*.real
+.env
+.env.*
+*.tsauthkey
+*.private
+
+# Generated files (rendered from .template)
+launchd/com.vreader.webdav.plist
+launchd/com.vreader.icloud-sync.plist
+
+# macOS noise
+.DS_Store
